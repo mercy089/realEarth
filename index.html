@@ -133,14 +133,14 @@
       scene.add(pointerlight);
 
       // 6. Clouds (slightly bigger than Earth)
-      const cloudgeometry = new THREE.SphereGeometry(0.41, 32, 32);
-      const cloudmaterial = new THREE.MeshPhongMaterial({
-        map: THREE.ImageUtils.loadTexture('texture/Earth-clouds.png'),
-        transparent: true,
-      });
+      // const cloudgeometry = new THREE.SphereGeometry(0.41, 32, 32);
+      // const cloudmaterial = new THREE.MeshPhongMaterial({
+      //   map: THREE.ImageUtils.loadTexture('texture/Earth-clouds.png'),
+      //   transparent: true,
+      // });
 
-      const cloudmesh = new THREE.Mesh(cloudgeometry, cloudmaterial);
-      scene.add(cloudmesh);
+      // const cloudmesh = new THREE.Mesh(cloudgeometry, cloudmaterial);
+      // scene.add(cloudmesh);
 
       // 7. Starfield Background
       const stargeometry = new THREE.SphereGeometry(80, 64, 64);
