@@ -1,1 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Realistic Earth</title>
+  <!-- <link rel="stylesheet" href="style.css" /> -->
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      /* overflow: hidden; */
+    }
+
+    @font-face {
+      font-family: 'AbodeFont';
+      src: url('./font/Abode-Light.ttf') format('truetype');
+    }
+
+    body {
+      margin: 0;
+      /* overflow: hidden; */
+    }
+
+    canvas {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    #labels {
+      font-family: AbodeFont;
+      position: absolute;
+      top: 52.5%;
+      left: 55%;
+      transform: translate(-50%, -50%);
+      color: white;
+      font-size: 80px;
+      z-index: 10;
+      pointer-events: none;
+      letter-spacing: 3px;
+      display: none;
+      text-shadow:
+        -2px -2px 0 #000,
+        2px -2px 0 #000,
+        -2px 2px 0 #000,
+        2px 2px 0 #000;
+    }
+
+    #labels::after {
+      content: "पृथ्वीकुल";
+      display: block;
+      margin-left: 180px;
+      /* adjust distance from "Planetskool" */
+      margin-top: -20px;
+      /* move it slightly up */
+      color: rgb(255, 72, 0);
+      font-size: 60px;
+      text-shadow:
+        -2px -2px 0 #000,
+        2px -2px 0 #000,
+        -2px 2px 0 #000,
+        2px 2px 0 #000;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="c"></canvas>
+  <div id="labels">
+    Planetskool
+  </div>
+
+  <script src="https://unpkg.com/three@0.136.0/build/three.min.js"></script>
+  <!-- <script src="app.js"></script> -->
+  <script>
+    let scene;
+    let camera;
+    let renderer;
+
+    function main() {
+      // Get canvas from HTML using id "c"
+      const canvas = document.querySelector('#c');
+
+      // 1. Create a new 3D Scene
+      scene = new THREE.Scene();
+
+      // 2. Perspective Camera setup
+      camera = new THREE.PerspectiveCamera(
+        45,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      camera.position.z = 2;
+      scene.add(camera);
+
+      // 3. WebGL Renderer setup
+      renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        antialias: true,
+      });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.autoClear = false;
+      renderer.setClearColor(0x000000, 0.0);
+
+      // 4. Create Earth Geometry
+      const earthgeometry = new THREE.SphereGeometry(0.4, 32, 32);
+
+      const eatrhmaterial = new THREE.MeshPhongMaterial({
+        roughness: 1,
+        metalness: 0,
+        map: THREE.ImageUtils.loadTexture('texture/world2.jpg'),
+        bumpMap: THREE.ImageUtils.loadTexture('texture/earthbump.jpg'),
+        bumpScale: 0.3,
+      });
+
+      const earthmesh = new THREE.Mesh(earthgeometry, eatrhmaterial);
+      scene.add(earthmesh);
+
+      // 5. Lighting
+      const ambientlight = new THREE.AmbientLight(0xffffff, 0.2);
+      scene.add(ambientlight);
+
+      const pointerlight = new THREE.PointLight(0xffffff, 0.9);
+      pointerlight.position.set(5, 3, 5);
+      scene.add(pointerlight);
+
+      // 6. Clouds (slightly bigger than Earth)
+      const cloudgeometry = new THREE.SphereGeometry(0.3, 32, 32);
+      const cloudmaterial = new THREE.MeshPhongMaterial({
+        map: THREE.ImageUtils.loadTexture('texture/Earth-clouds.png'),
+        transparent: true,
+      });
+
+      const cloudmesh = new THREE.Mesh(cloudgeometry, cloudmaterial);
+      scene.add(cloudmesh);
+
+      // 7. Starfield Background
+      const stargeometry = new THREE.SphereGeometry(80, 64, 64);
+      const starmaterial = new THREE.MeshBasicMaterial({
+        map: THREE.ImageUtils.loadTexture('texture/HDR_multi_nebulae.jpg'),
+        side: THREE.BackSide,
+      });
+
+      const starmesh = new THREE.Mesh(stargeometry, starmaterial);
+      scene.add(starmesh);
+
+      // 8. Animate
+      const animate = () => {
+        requestAnimationFrame(animate);
+        earthmesh.rotation.y -= 0.0015;
+        cloudmesh.rotation.y += 0.0015;
+        starmesh.rotation.y += 0.0005;
+        render();
+      };
+
+      // 9. Render
+      const render = () => {
+        renderer.render(scene, camera);
+      };
+
+      // ✅ 10. Make responsive to screen size
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix(); // Update camera projection
+        renderer.setSize(window.innerWidth, window.innerHeight); // Resize canvas
+        renderer.setPixelRatio(window.devicePixelRatio); // Optional: keep crisp rendering
+      });
+
+      animate();
+    }
+
+    window.onload = () => {
+      main();
+      document.getElementById('labels').style.display = 'block';
+    };
+
+
+  </script>
+</body>
+
+</html>
 
