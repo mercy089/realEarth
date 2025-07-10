@@ -22,13 +22,16 @@
       height: 100%;
       width: 100%;
       overflow: hidden;
-/*       font-family: 'Segoe UI', 'Roboto', Arial, sans-serif; */
-      background-color: #000; /* Ensure background is black */
+      /*       font-family: 'Segoe UI', 'Roboto', Arial, sans-serif; */
+      background-color: #000;
+      /* Ensure background is black */
     }
-@font-face {
-  font-family: 'AbodeFont'; /* You can name it anything */
-  src: url('./font/Abode-Light.ttf') format('truetype');
-}
+
+    @font-face {
+      font-family: 'AbodeFont';
+      /* You can name it anything */
+      src: url('./font/Abode-Light.ttf') format('truetype');
+    }
 
     /* Canvas takes full viewport space and is interactive */
     canvas {
@@ -38,10 +41,12 @@
       left: 0;
       width: 100vw !important;
       height: 100vh !important;
-      cursor: grab; /* Indicate interactivity */
+      cursor: grab;
+      /* Indicate interactivity */
     }
+
     canvas:active {
-        cursor: grabbing;
+      cursor: grabbing;
     }
 
     /* Responsive text labels that scale with viewport size */
@@ -57,6 +62,7 @@
       letter-spacing: 3px;
       display: none;
       text-align: center;
+      font-family: 'AbodeFont', sans-serif;
       text-shadow:
         -2px -2px 0 #000,
         2px -2px 0 #000,
@@ -129,7 +135,7 @@
       transform: translateY(-1px);
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     }
-    
+
     .get-started-btn {
       background: linear-gradient(135deg, rgba(255, 72, 0, 0.3), rgba(255, 165, 0, 0.3));
       border-color: rgba(255, 72, 0, 0.4);
@@ -174,7 +180,7 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.136.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.136.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.136.0/examples/js/objects/Lensflare.js"></script>
-  
+
   <script>
     // === GLOBAL VARIABLES FOR 3D SCENE === //
     let scene, camera, renderer, earthMesh, cloudMesh, starMesh, controls, sunLight;
@@ -209,7 +215,7 @@
         url.pathname = url.pathname.replace('/blob/', '/');
         return url.href;
       };
-      
+
       const textureLoader = new THREE.TextureLoader();
 
       // === EARTH GEOMETRY & MATERIAL === //
@@ -221,7 +227,7 @@
         emissive: new THREE.Color(0xffffff),
         emissiveIntensity: 1.0,
         bumpScale: 0.1, // Adjusted for more realism
-        shininess: 5, 
+        shininess: 5,
         specular: new THREE.Color(0x111111),
       });
       earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
@@ -233,34 +239,34 @@
       const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
       scene.add(ambientLight);
       sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
-      
+
       // FIX: Set sun position based on real-world time
       function updateSunPosition() {
-          const now = new Date();
-          // Get the current time in UTC
-          const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60;
-          
-          // Calculate the day of the year
-          const startOfYear = new Date(now.getFullYear(), 0, 0);
-          const diff = now - startOfYear;
-          const oneDay = 1000 * 60 * 60 * 24;
-          const dayOfYear = Math.floor(diff / oneDay);
+        const now = new Date();
+        // Get the current time in UTC
+        const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60;
 
-          // Calculate the sun's declination (latitude) based on the day of the year
-          const declination = -23.45 * Math.cos(2 * Math.PI / 365 * (dayOfYear + 10));
-          const sunLatRad = THREE.MathUtils.degToRad(declination);
+        // Calculate the day of the year
+        const startOfYear = new Date(now.getFullYear(), 0, 0);
+        const diff = now - startOfYear;
+        const oneDay = 1000 * 60 * 60 * 24;
+        const dayOfYear = Math.floor(diff / oneDay);
 
-          // Calculate the sun's longitude based on the UTC time
-          const sunLongitude = (utcHours - 12) * 15;
-          const sunLonRad = THREE.MathUtils.degToRad(sunLongitude);
+        // Calculate the sun's declination (latitude) based on the day of the year
+        const declination = -23.45 * Math.cos(2 * Math.PI / 365 * (dayOfYear + 10));
+        const sunLatRad = THREE.MathUtils.degToRad(declination);
 
-          // Convert spherical coordinates (lat, lon) to Cartesian (x, y, z)
-          const sunPosRadius = 5;
-          sunLight.position.x = sunPosRadius * Math.cos(sunLatRad) * Math.cos(sunLonRad);
-          sunLight.position.y = sunPosRadius * Math.sin(sunLatRad);
-          sunLight.position.z = sunPosRadius * Math.cos(sunLatRad) * Math.sin(sunLonRad);
+        // Calculate the sun's longitude based on the UTC time
+        const sunLongitude = (utcHours - 12) * 15;
+        const sunLonRad = THREE.MathUtils.degToRad(sunLongitude);
+
+        // Convert spherical coordinates (lat, lon) to Cartesian (x, y, z)
+        const sunPosRadius = 5;
+        sunLight.position.x = sunPosRadius * Math.cos(sunLatRad) * Math.cos(sunLonRad);
+        sunLight.position.y = sunPosRadius * Math.sin(sunLatRad);
+        sunLight.position.z = sunPosRadius * Math.cos(sunLatRad) * Math.sin(sunLonRad);
       }
-      
+
       updateSunPosition(); // Set initial position
 
       sunLight.castShadow = true;
@@ -316,7 +322,7 @@
       // === ANIMATION LOOP === //
       const animate = () => {
         requestAnimationFrame(animate);
-        
+
         // The OrbitControls now handle the rotation
         cloudMesh.rotation.y += 0.0001;
 
@@ -334,9 +340,9 @@
         renderer.setSize(width, height);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       };
-      
+
       window.addEventListener('resize', handleResize);
-      
+
       animate();
     }
 
