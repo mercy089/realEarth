@@ -22,9 +22,13 @@
       height: 100%;
       width: 100%;
       overflow: hidden;
-      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+/*       font-family: 'Segoe UI', 'Roboto', Arial, sans-serif; */
       background-color: #000; /* Ensure background is black */
     }
+@font-face {
+  font-family: 'AbodeFont'; /* You can name it anything */
+  src: url('./font/Abode-Light.ttf') format('truetype');
+}
 
     /* Canvas takes full viewport space and is interactive */
     canvas {
@@ -174,7 +178,6 @@
   <script>
     // === GLOBAL VARIABLES FOR 3D SCENE === //
     let scene, camera, renderer, earthMesh, cloudMesh, starMesh, controls, sunLight;
-    const clock = new THREE.Clock();
 
     function main() {
       const canvas = document.querySelector('#c');
@@ -217,7 +220,7 @@
         emissiveMap: textureLoader.load(toRawURL('https://github.com/mercy089/realEarth/blob/main/texture/8k_earth_nightmap.jpg')),
         emissive: new THREE.Color(0xffffff),
         emissiveIntensity: 1.0,
-        bumpScale: 0.2,
+        bumpScale: 0.1, // Adjusted for more realism
         shininess: 5, 
         specular: new THREE.Color(0x111111),
       });
@@ -231,21 +234,34 @@
       scene.add(ambientLight);
       sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
       
-      // FIX: Set sun position based on real-world time instead of animating it
-      const now = new Date();
-      const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60;
-      const startOfYear = new Date(now.getFullYear(), 0, 0);
-      const diff = now - startOfYear;
-      const oneDay = 1000 * 60 * 60 * 24;
-      const dayOfYear = Math.floor(diff / oneDay);
-      const declination = -23.45 * Math.cos(2 * Math.PI / 365 * (dayOfYear + 10));
-      const sunLatRad = THREE.MathUtils.degToRad(declination);
-      const sunLongitude = (12 - utcHours) * 15;
-      const sunLonRad = THREE.MathUtils.degToRad(-sunLongitude);
-      const sunPosRadius = 5;
-      sunLight.position.x = sunPosRadius * Math.cos(sunLatRad) * Math.cos(sunLonRad);
-      sunLight.position.y = sunPosRadius * Math.sin(sunLatRad);
-      sunLight.position.z = sunPosRadius * Math.cos(sunLatRad) * Math.sin(sunLonRad);
+      // FIX: Set sun position based on real-world time
+      function updateSunPosition() {
+          const now = new Date();
+          // Get the current time in UTC
+          const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60;
+          
+          // Calculate the day of the year
+          const startOfYear = new Date(now.getFullYear(), 0, 0);
+          const diff = now - startOfYear;
+          const oneDay = 1000 * 60 * 60 * 24;
+          const dayOfYear = Math.floor(diff / oneDay);
+
+          // Calculate the sun's declination (latitude) based on the day of the year
+          const declination = -23.45 * Math.cos(2 * Math.PI / 365 * (dayOfYear + 10));
+          const sunLatRad = THREE.MathUtils.degToRad(declination);
+
+          // Calculate the sun's longitude based on the UTC time
+          const sunLongitude = (utcHours - 12) * 15;
+          const sunLonRad = THREE.MathUtils.degToRad(sunLongitude);
+
+          // Convert spherical coordinates (lat, lon) to Cartesian (x, y, z)
+          const sunPosRadius = 5;
+          sunLight.position.x = sunPosRadius * Math.cos(sunLatRad) * Math.cos(sunLonRad);
+          sunLight.position.y = sunPosRadius * Math.sin(sunLatRad);
+          sunLight.position.z = sunPosRadius * Math.cos(sunLatRad) * Math.sin(sunLonRad);
+      }
+      
+      updateSunPosition(); // Set initial position
 
       sunLight.castShadow = true;
       sunLight.shadow.mapSize.width = 2048;
@@ -301,8 +317,9 @@
       const animate = () => {
         requestAnimationFrame(animate);
         
-        // REMOVED: Sun animation logic is no longer needed here
-        
+        // The OrbitControls now handle the rotation
+        cloudMesh.rotation.y += 0.0001;
+
         controls.update();
         starMesh.rotation.y -= 0.0002;
         renderer.render(scene, camera);
