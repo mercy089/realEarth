@@ -83,100 +83,13 @@
         -2px 2px 0 #000,
         2px 2px 0 #000;
     }
-
-    /* === GLASS NAVIGATION BAR === */
-    .glass-navbar {
-      position: fixed;
-      bottom: 5vh;
-      left: 50%;
-      transform: translateX(-50%);
-      height: 10vh;
-      z-index: 999;
-      background: rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 50px;
-      padding: 12px 20px;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      width: clamp(300px, 90%, 450px);
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    }
-
-    .glass-btn {
-      flex: 1;
-      margin: 0 5px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 25px;
-      padding: 10px 20px;
-      color: white;
-      font-size: clamp(14px, 2.5vw, 16px);
-      font-weight: 500;
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-    }
-
-    .glass-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
-      border-color: rgba(255, 255, 255, 0.4);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-    }
-
-    .get-started-btn {
-      background: linear-gradient(135deg, rgba(255, 72, 0, 0.3), rgba(255, 165, 0, 0.3));
-      border-color: rgba(255, 72, 0, 0.4);
-      font-weight: 600;
-    }
-
-    .get-started-btn:hover {
-      background: linear-gradient(135deg, rgba(255, 72, 0, 0.4), rgba(255, 165, 0, 0.4));
-      border-color: rgba(255, 72, 0, 0.6);
-    }
-
-    .btn-icon {
-      width: 16px;
-      height: 16px;
-      fill: currentColor;
-    }
   </style>
 </head>
-
 <body>
   <canvas id="c"></canvas>
   <div id="labels">
     Planetskool
   </div>
-
-  <nav class="glass-navbar" id="glassNavbar">
-    <button class="glass-btn language-btn">
-      <svg class="btn-icon" viewBox="0 0 24 24">
-        <path
-          d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z" />
-      </svg>
-      Language
-    </button>
-    <a href="https://planetskool.org/signin" class="glass-btn get-started-btn" target="_blank">
-      <svg class="btn-icon" viewBox="0 0 24 24">
-        <path d="M4 12l1.41 1.41L11 7.83V20h2V7.83l5.58 5.59L20 12l-8-8-8 8z" />
-      </svg>
-      Get Started
-    </a>
-  </nav>
-
   <script src="https://cdn.jsdelivr.net/npm/three@0.136.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.136.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.136.0/examples/js/objects/Lensflare.js"></script>
