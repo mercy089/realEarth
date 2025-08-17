@@ -5,186 +5,1131 @@
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Realistic Earth</title>
-  <!-- <link rel="stylesheet" href="style.css" /> -->
+  <title>Realistic 3D Earth Visualization</title>
 
   <style>
+    /* === VIEWPORT RESPONSIVE SETUP === */
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      /* overflow: hidden; */
     }
 
-    @font-face {
-      font-family: 'AbodeFont';
-      src: url('./font/Abode-Light.ttf') format('truetype');
-    }
-
+    html,
     body {
       margin: 0;
-      /* overflow: hidden; */
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      /*       font-family: 'Segoe UI', 'Roboto', Arial, sans-serif; */
+      background-color: #000;
+      /* Ensure background is black */
     }
 
+    /* Canvas takes full viewport space and is interactive */
     canvas {
       display: block;
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
+      width: 100vw !important;
+      height: 100vh !important;
+      cursor: grab;
+      /* Indicate interactivity */
     }
 
+    canvas:active {
+      cursor: grabbing;
+    }
+
+    /* Responsive text labels that scale with viewport size */
     #labels {
-      font-family: AbodeFont;
-      position: absolute;
-      top: 52.5%;
-      left: 55%;
+      position: fixed;
+      top: 50%;
+      left: 50%;
       transform: translate(-50%, -50%);
       color: white;
-      font-size: 80px;
+      font-size: clamp(40px, 8vw, 80px);
       z-index: 10;
       pointer-events: none;
       letter-spacing: 3px;
       display: none;
+      text-align: center;
+      font-family: 'Georgia', 'Times New Roman', serif; /* Fallback fonts until JS loads custom font */
       text-shadow:
         -2px -2px 0 #000,
         2px -2px 0 #000,
         -2px 2px 0 #000,
         2px 2px 0 #000;
+      /* Remove CSS transition - will be handled by JavaScript */
     }
 
     #labels::after {
       content: "पृथ्वीकुल";
       display: block;
-      margin-left: 180px;
-      /* adjust distance from "Planetskool" */
-      margin-top: -20px;
-      /* move it slightly up */
+      margin-left: clamp(50px, 15vw, 180px);
+      margin-top: clamp(-15px, -2vw, -20px);
       color: rgb(255, 72, 0);
-      font-size: 60px;
+      font-size: clamp(20px, 4vw, 40px);
       text-shadow:
         -2px -2px 0 #000,
         2px -2px 0 #000,
         -2px 2px 0 #000,
         2px 2px 0 #000;
     }
+
+    /* Get Started Button - Glass Effect */
+    #getStartedBtn {
+      /* Fixed positioning - bottom right corner */
+      position: fixed !important;
+      bottom: 5% !important;
+      right: 5% !important;
+      top: auto !important;
+      left: auto !important;
+      transform: none !important;
+      
+      /* Glass morphism background */
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      
+      /* Border and styling */
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50px;
+      
+      /* Text styling */
+      color: white;
+      font-size: clamp(16px, 3vw, 24px);
+      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+      font-weight: bold;
+      padding: 15px 30px;
+      
+      /* Interactive elements */
+      cursor: pointer;
+      z-index: 20;
+      pointer-events: auto;
+      
+      /* Glass effect shadows and glow */
+      box-shadow: 
+        0 8px 32px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      
+      /* Smooth transitions */
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      
+      /* For pseudo-element positioning */
+      overflow: hidden;
+    }
+
+    /* Glass button shine effect */
+    #getStartedBtn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+      );
+      transition: left 0.5s;
+    }
+
+    #getStartedBtn:hover {
+      /* Enhanced glass effect on hover */
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+      transform: translateY(-3px);
+      
+      /* Enhanced glow */
+      box-shadow: 
+        0 12px 40px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+
+    #getStartedBtn:hover::before {
+      left: 100%;
+    }
+
+    #getStartedBtn:active {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.2);
+      box-shadow: 
+        0 4px 20px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    /* Shifted states - removed since handled by JavaScript */
+
+    /* Button stays in fixed position - no shifting */
   </style>
 </head>
-
 <body>
   <canvas id="c"></canvas>
   <div id="labels">
     Planetskool
   </div>
+  <button id="getStartedBtn">Get Started</button>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.136.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.136.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.136.0/examples/js/objects/Lensflare.js"></script>
 
-  <script src="https://unpkg.com/three@0.136.0/build/three.min.js"></script>
-  <!-- <script src="app.js"></script> -->
   <script>
-    let scene;
-    let camera;
-    let renderer;
-
-    function main() {
-      // Get canvas from HTML using id "c"
-      const canvas = document.querySelector('#c');
-
-      // 1. Create a new 3D Scene
-      scene = new THREE.Scene();
-
-      // 2. Perspective Camera setup
-      camera = new THREE.PerspectiveCamera(
-        45,
-        window.innerWidth / window.innerHeight,
-        0.1,
-        1000
-      );
-      camera.position.z = 2;
-      scene.add(camera);
-
-      // 3. WebGL Renderer setup
-      renderer = new THREE.WebGLRenderer({
-        canvas: canvas,
-        antialias: true,
-      });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setPixelRatio(window.devicePixelRatio);
-      renderer.autoClear = false;
-      renderer.setClearColor(0x000000, 0.0);
-
-      // 4. Create Earth Geometry
-      const earthgeometry = new THREE.SphereGeometry(0.4, 32, 32);
-
-      const eatrhmaterial = new THREE.MeshPhongMaterial({
-        roughness: 1,
-        metalness: 0,
-        map: THREE.ImageUtils.loadTexture('texture/world2.jpg'),
-        bumpMap: THREE.ImageUtils.loadTexture('texture/earthbump.jpg'),
-        bumpScale: 0.3,
-      });
-
-      const earthmesh = new THREE.Mesh(earthgeometry, eatrhmaterial);
-      scene.add(earthmesh);
-
-      // 5. Lighting
-      const ambientlight = new THREE.AmbientLight(0xffffff, 0.2);
-      scene.add(ambientlight);
-
-      const pointerlight = new THREE.PointLight(0xffffff, 0.9);
-      pointerlight.position.set(5, 3, 5);
-      scene.add(pointerlight);
-
-      // 6. Clouds (slightly bigger than Earth)
-      const cloudgeometry = new THREE.SphereGeometry(0.3, 32, 32);
-      const cloudmaterial = new THREE.MeshPhongMaterial({
-        map: THREE.ImageUtils.loadTexture('texture/Earth-clouds.png'),
-        transparent: true,
-      });
-
-      const cloudmesh = new THREE.Mesh(cloudgeometry, cloudmaterial);
-      scene.add(cloudmesh);
-
-      // 7. Starfield Background
-      const stargeometry = new THREE.SphereGeometry(80, 64, 64);
-      const starmaterial = new THREE.MeshBasicMaterial({
-        map: THREE.ImageUtils.loadTexture('texture/HDR_multi_nebulae.jpg'),
-        side: THREE.BackSide,
-      });
-
-      const starmesh = new THREE.Mesh(stargeometry, starmaterial);
-      scene.add(starmesh);
-
-      // 8. Animate
-      const animate = () => {
-        requestAnimationFrame(animate);
-        earthmesh.rotation.y -= 0.0015;
-        cloudmesh.rotation.y += 0.0015;
-        starmesh.rotation.y += 0.0005;
-        render();
-      };
-
-      // 9. Render
-      const render = () => {
-        renderer.render(scene, camera);
-      };
-
-      // ✅ 10. Make responsive to screen size
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix(); // Update camera projection
-        renderer.setSize(window.innerWidth, window.innerHeight); // Resize canvas
-        renderer.setPixelRatio(window.devicePixelRatio); // Optional: keep crisp rendering
-      });
-
-      animate();
-    }
-
-    window.onload = () => {
-      main();
-      document.getElementById('labels').style.display = 'block';
+    // === CONFIGURATION CONSTANTS === //
+    const CONFIG = {
+      CAMERA: {
+        FOV: 50,
+        NEAR: 0.1,
+        FAR: 1000,
+        INITIAL_Z: 2
+      },
+      EARTH: {
+        RADIUS: 0.4,
+        SEGMENTS: 64,
+        ROTATION_SPEED: 0.001,
+        GROUP_ROTATION_SPEED: 0.001
+      },
+      CLOUDS: {
+        RADIUS: 0.405,
+        SEGMENTS: 64,
+        ROTATION_SPEED: 0.0005,
+        OPACITY: 0.4
+      },
+      STARS: {
+        RADIUS: 100,
+        SEGMENTS: 64,
+        ROTATION_SPEED_Y: -0.0002,
+        ROTATION_SPEED_X: 0.0001
+      },
+      ANIMATION: {
+        LERP_FACTOR: 0.03,  // Slower for smoother transitions
+        SHIFT_DISTANCE: -1.0,
+        TEXT_SHIFT_PERCENT: 25,
+        CENTER_PERCENT: 50
+      },
+      URLS: {
+        FONT: 'https://cdn.jsdelivr.net/gh/mercy089/realEarth@main/font/Abode-Light.ttf',
+        TEXTURES: {
+          EARTH: 'https://github.com/mercy089/realEarth/blob/main/texture/world.jpg',
+          BUMP: 'https://github.com/mercy089/realEarth/blob/main/texture/earthbump.jpg',
+          NIGHT: 'https://github.com/mercy089/realEarth/blob/main/texture/8k_earth_nightmap.jpg',
+          CLOUDS: 'https://github.com/mercy089/realEarth/blob/main/texture/Earth-clouds.png',
+          STARS: 'https://github.com/mercy089/realEarth/blob/main/texture/HDR_multi_nebulae.jpg'
+        }
+      }
     };
 
+    // === POSITION MANAGEMENT CLASS === //
+    class Position {
+      constructor(x = 0, y = 0) {
+        this.x = x;
+        this.y = y;
+      }
 
+      static fromPercentage(xPercent, yPercent) {
+        return new Position(
+          typeof xPercent === 'string' ? parseFloat(xPercent.replace('%', '')) : xPercent,
+          typeof yPercent === 'string' ? parseFloat(yPercent.replace('%', '')) : yPercent
+        );
+      }
+
+      lerp(target, factor) {
+        this.x += (target.x - this.x) * factor;
+        this.y += (target.y - this.y) * factor;
+        return this;
+      }
+
+      toPercentageString() {
+        return {
+          x: this.x + '%',
+          y: this.y + '%'
+        };
+      }
+
+      clone() {
+        return new Position(this.x, this.y);
+      }
+    }
+
+    // === FONT LOADING SYSTEM === //
+    const FontLoader = {
+      async load() {
+        try {
+          const font = new FontFace('AbodeFont', `url(${CONFIG.URLS.FONT})`, {
+            style: 'normal',
+            weight: '300',
+            display: 'swap'
+          });
+          
+          const loadedFont = await font.load();
+          document.fonts.add(loadedFont);
+          
+          this.applyToElements();
+          return true;
+        } catch (error) {
+          this.useFallback();
+          return false;
+        }
+      },
+
+      applyToElements() {
+        const labelsElement = document.getElementById('labels');
+        if (labelsElement) {
+          labelsElement.style.fontFamily = "'AbodeFont', 'Georgia', 'Times New Roman', serif";
+          this.forceRepaint(labelsElement);
+        }
+      },
+
+      forceRepaint(element) {
+        element.style.display = 'none';
+        element.offsetHeight; // Trigger reflow
+        element.style.display = 'block';
+      },
+
+      useFallback() {
+        const labelsElement = document.getElementById('labels');
+        if (labelsElement) {
+          labelsElement.style.fontFamily = "'Georgia', 'Times New Roman', serif";
+        }
+      }
+    };
+
+    // === ANIMATION MANAGER === //
+    class AnimationManager {
+      constructor(lerpFactor = CONFIG.ANIMATION.LERP_FACTOR) {
+        this.lerpFactor = lerpFactor;
+      }
+
+      lerpPosition(current, target) {
+        current.x += (target.x - current.x) * this.lerpFactor;
+        current.y += (target.y - current.y) * this.lerpFactor;
+        return current;
+      }
+
+      lerpValue(current, target) {
+        return current + (target - current) * this.lerpFactor;
+      }
+
+      animateElement(element, currentPos, targetPos, property = 'position') {
+        if (!element) return;
+
+        const newPos = this.lerpPosition(currentPos.clone(), targetPos);
+        
+        if (property === 'position') {
+          element.position.x = newPos.x;
+          element.position.y = newPos.y;
+        } else if (property === 'style') {
+          const posStr = newPos.toPercentageString();
+          element.style.left = posStr.x;
+          element.style.top = posStr.y;
+        }
+
+        return newPos;
+      }
+    }
+
+    // === POSITION CALCULATOR === //
+    class PositionCalculator {
+      static getScreenInfo() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const isPortrait = height > width;
+        return { width, height, isPortrait };
+      }
+
+      static getTextPosition() {
+        const { isPortrait } = this.getScreenInfo();
+        
+        if (isPortrait) {
+          return { x: '50%', y: '25%', isPortrait: true };
+        } else {
+          return { x: '25%', y: '50%', isPortrait: false };
+        }
+      }
+
+      // Convert 3D world position to 2D screen coordinates
+      static worldToScreen(worldPos, camera, renderer) {
+        const vector = new THREE.Vector3(worldPos.x, worldPos.y, worldPos.z);
+        vector.project(camera);
+        
+        const widthHalf = renderer.domElement.width / 2;
+        const heightHalf = renderer.domElement.height / 2;
+        
+        return {
+          x: ((vector.x * widthHalf) + widthHalf),
+          y: (-(vector.y * heightHalf) + heightHalf)
+        };
+      }
+
+      // Get text position that follows Earth center in world space
+      static getTextPositionRelativeToEarth(earthGroup, camera, renderer) {
+        if (!earthGroup || !camera || !renderer) {
+          return { x: '50%', y: '50%' };
+        }
+
+        // Get the world position of the Earth center
+        const earthWorldPos = new THREE.Vector3();
+        earthGroup.getWorldPosition(earthWorldPos);
+        
+        // Convert world position to screen coordinates
+        const screenPos = this.worldToScreen(earthWorldPos, camera, renderer);
+        
+        // Convert to percentage of screen
+        const xPercent = (screenPos.x / renderer.domElement.width) * 100;
+        const yPercent = (screenPos.y / renderer.domElement.height) * 100;
+        
+        return {
+          x: Math.max(0, Math.min(100, xPercent)) + '%',
+          y: Math.max(0, Math.min(100, yPercent)) + '%'
+        };
+      }
+
+      static getEarthPosition(camera = null) {
+        const { width, height, isPortrait } = this.getScreenInfo();
+        
+        const cameraRef = camera || { 
+          position: { z: CONFIG.CAMERA.INITIAL_Z }, 
+          fov: CONFIG.CAMERA.FOV 
+        };
+        
+        const distance = cameraRef.position.z;
+        const vFOV = THREE.MathUtils.degToRad(cameraRef.fov);
+        const visibleHeight = 2 * Math.tan(vFOV / 2) * distance;
+        const visibleWidth = visibleHeight * (width / height);
+        
+        if (isPortrait) {
+          return { x: 0, y: visibleHeight * 0.25, isPortrait: true };
+        } else {
+          return { x: -(visibleWidth * 0.25), y: 0, isPortrait: false };
+        }
+      }
+    }
+
+    // === UTILITY FUNCTIONS === //
+    const Utils = {
+      toRawURL(githubURL) {
+        if (!githubURL.includes('github.com')) return githubURL;
+        const url = new URL(githubURL);
+        url.hostname = 'raw.githubusercontent.com';
+        url.pathname = url.pathname.replace('/blob/', '/');
+        return url.href;
+      },
+
+      // Calculate responsive Earth radius based on screen orientation
+      getResponsiveEarthRadius() {
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+        const isPortrait = screenHeight > screenWidth;
+        
+        // Choose dimension based on orientation
+        // Portrait: size based on width (limiting factor)
+        // Landscape: size based on height (limiting factor)  
+        const sizingDimension = isPortrait ? screenWidth : screenHeight;
+        
+        // Base radius scaled by appropriate dimension
+        // Mobile: 0.25-0.35, Tablet: 0.35-0.45, Desktop: 0.4-0.5
+        if (sizingDimension < 480) {
+          // Mobile phones
+          return Math.max(0.25, Math.min(0.35, sizingDimension / 1400));
+        } else if (sizingDimension < 768) {
+          // Large phones / small tablets  
+          return Math.max(0.3, Math.min(0.4, sizingDimension / 1600));
+        } else if (sizingDimension < 1024) {
+          // Tablets
+          return Math.max(0.35, Math.min(0.45, sizingDimension / 1800));
+        } else {
+          // Desktop
+          return Math.max(0.4, Math.min(0.55, sizingDimension / 2000));
+        }
+      },
+
+      // Calculate text positioning that follows Earth center
+      calculateTextShiftForScreenPosition() {
+        // This method now gets text position relative to Earth, not screen orientation
+        return PositionCalculator.getTextPositionRelativeToEarth(
+          this.earthGroup, 
+          this.camera, 
+          this.renderer
+        );
+      },
+
+      // Calculate Earth shift distance based on screen orientation
+      calculateEarthShiftForScreenPosition() {
+        return PositionCalculator.getEarthPosition(this.camera);
+      },
+
+      // Calculate responsive cloud radius (slightly larger than Earth)
+      getResponsiveCloudRadius() {
+        return this.getResponsiveEarthRadius() + 0.005;
+      },
+
+      // Calculate responsive segments for geometry quality
+      getResponsiveSegments() {
+        const screenWidth = window.innerWidth;
+        
+        // Lower quality on smaller screens for better performance
+        if (screenWidth < 480) {
+          return 32; // Mobile - lower quality for performance
+        } else if (screenWidth < 768) {
+          return 48; // Large mobile - medium quality
+        } else {
+          return 64; // Desktop - high quality
+        }
+      },
+
+      // Calculate responsive button size and positioning
+      getResponsiveButtonStyles() {
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+        
+        if (screenWidth < 480) {
+          // Mobile phones - larger touch targets
+          return {
+            fontSize: 'clamp(14px, 4vw, 18px)',
+            padding: '12px 24px',
+            bottom: '8%',
+            right: '5%',
+            borderRadius: '30px'
+          };
+        } else if (screenWidth < 768) {
+          // Large phones/small tablets
+          return {
+            fontSize: 'clamp(16px, 3.5vw, 20px)',
+            padding: '14px 28px',
+            bottom: '6%',
+            right: '5%',
+            borderRadius: '40px'
+          };
+        } else if (screenWidth < 1024) {
+          // Tablets
+          return {
+            fontSize: 'clamp(18px, 3vw, 22px)',
+            padding: '15px 30px',
+            bottom: '5%',
+            right: '5%',
+            borderRadius: '50px'
+          };
+        } else {
+          // Desktop
+          return {
+            fontSize: 'clamp(16px, 3vw, 24px)',
+            padding: '15px 30px',
+            bottom: '5%',
+            right: '5%',
+            borderRadius: '50px'
+          };
+        }
+      },
+
+      // Calculate responsive text sizes
+      getResponsiveTextStyles() {
+        const screenWidth = window.innerWidth;
+        const screenHeight = window.innerHeight;
+        
+        if (screenWidth < 480) {
+          // Mobile phones
+          return {
+            mainFont: 'clamp(28px, 7vw, 50px)',
+            subFont: 'clamp(20px, 5vw, 35px)',
+            letterSpacing: '2px',
+            subMarginLeft: 'clamp(30px, 10vw, 120px)',
+            subMarginTop: 'clamp(-10px, -1.5vw, -15px)'
+          };
+        } else if (screenWidth < 768) {
+          // Large phones/small tablets
+          return {
+            mainFont: 'clamp(35px, 7.5vw, 60px)',
+            subFont: 'clamp(25px, 5.5vw, 45px)',
+            letterSpacing: '2.5px',
+            subMarginLeft: 'clamp(40px, 12vw, 150px)',
+            subMarginTop: 'clamp(-12px, -1.8vw, -18px)'
+          };
+        } else if (screenWidth < 1024) {
+          // Tablets
+          return {
+            mainFont: 'clamp(40px, 8vw, 70px)',
+            subFont: 'clamp(28px, 6vw, 55px)',
+            letterSpacing: '3px',
+            subMarginLeft: 'clamp(45px, 13vw, 160px)',
+            subMarginTop: 'clamp(-15px, -2vw, -20px)'
+          };
+        } else {
+          // Desktop
+          return {
+            mainFont: 'clamp(40px, 8vw, 80px)',
+            subFont: 'clamp(30px, 6vw, 60px)',
+            letterSpacing: '3px',
+            subMarginLeft: 'clamp(50px, 15vw, 180px)',
+            subMarginTop: 'clamp(-15px, -2vw, -20px)'
+          };
+        }
+      },
+
+      // Apply responsive styles to button
+      updateButtonStyles() {
+        const button = document.getElementById('getStartedBtn');
+        if (!button) return;
+        
+        const styles = this.getResponsiveButtonStyles();
+        
+        button.style.fontSize = styles.fontSize;
+        button.style.padding = styles.padding;
+        button.style.bottom = styles.bottom;
+        button.style.right = styles.right;
+        button.style.borderRadius = styles.borderRadius;
+      },
+
+      // Apply responsive styles to text
+      updateTextStyles() {
+        const labels = document.getElementById('labels');
+        if (!labels) return;
+        
+        const styles = this.getResponsiveTextStyles();
+        
+        labels.style.fontSize = styles.mainFont;
+        labels.style.letterSpacing = styles.letterSpacing;
+        
+        // Update the pseudo-element styles dynamically
+        const styleId = 'responsive-text-styles';
+        let styleElement = document.getElementById(styleId);
+        
+        if (!styleElement) {
+          styleElement = document.createElement('style');
+          styleElement.id = styleId;
+          document.head.appendChild(styleElement);
+        }
+        
+        styleElement.textContent = `
+          #labels::after {
+            font-size: ${styles.subFont} !important;
+            margin-left: ${styles.subMarginLeft} !important;
+            margin-top: ${styles.subMarginTop} !important;
+          }
+        `;
+      },
+
+      calculateSunPosition() {
+        const now = new Date();
+        const utcHours = now.getUTCHours() + now.getUTCMinutes() / 60;
+        const startOfYear = new Date(now.getFullYear(), 0, 0);
+        const dayOfYear = Math.floor((now - startOfYear) / (1000 * 60 * 60 * 24));
+        
+        const declination = -23.45 * Math.cos(2 * Math.PI / 365 * (dayOfYear + 10));
+        const sunLatRad = THREE.MathUtils.degToRad(declination);
+        const sunLonRad = THREE.MathUtils.degToRad((utcHours - 12) * 15);
+        
+        const sunPosRadius = 5;
+        return {
+          x: sunPosRadius * Math.cos(sunLatRad) * Math.cos(sunLonRad),
+          y: sunPosRadius * Math.sin(sunLatRad),
+          z: sunPosRadius * Math.cos(sunLatRad) * Math.sin(sunLonRad)
+        };
+      }
+    };
+
+    // === 3D SCENE MANAGEMENT === //
+    // === 3D SCENE MANAGEMENT === //
+    class EarthScene {
+      constructor() {
+        this.scene = null;
+        this.camera = null;
+        this.renderer = null;
+        this.controls = null;
+        this.earthGroup = null;
+        this.earthMesh = null;
+        this.cloudMesh = null;
+        this.starMesh = null;
+        this.sunLight = null;
+        this.textureLoader = new THREE.TextureLoader();
+        
+        // Animation state
+        this.isShifted = false;
+        this.earthPosition = new Position(0, 0);
+        this.targetEarthPosition = new Position(0, 0);
+        this.textPosition = new Position(50, 50);
+        this.targetTextPosition = new Position(50, 50);
+        this.animationManager = new AnimationManager();
+        
+        // Text follows Earth flag
+        this.textFollowsEarth = true;
+        this.isUserInteracting = false;  // Track user interaction
+        this.interactionTimeout = null;  // Timeout for resuming text following
+        
+        // Legacy properties for compatibility
+        this.targetX = 0;
+        this.targetY = 0;
+        this.targetTextLeft = CONFIG.ANIMATION.CENTER_PERCENT;
+        this.targetTextX = '50%';
+        this.targetTextY = '50%';
+        this.currentTextX = '50%';
+        this.currentTextY = '50%';
+        
+        // Default positions for reset
+        this.defaultCameraPosition = new THREE.Vector3(0, 0, CONFIG.CAMERA.INITIAL_Z);
+        this.defaultCameraTarget = new THREE.Vector3(0, 0, 0);
+      }
+
+      init() {
+        this.setupRenderer();
+        this.setupCamera();
+        this.setupScene();
+        this.setupLighting();
+        this.setupEarth();
+        this.setupClouds();
+        this.setupStars();
+        this.setupControls();
+        this.setupEventListeners();
+        this.startAnimation();
+      }
+
+      setupRenderer() {
+        const canvas = document.querySelector('#c');
+        this.renderer = new THREE.WebGLRenderer({
+          canvas: canvas,
+          antialias: true,
+          logarithmicDepthBuffer: true,
+        });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this.renderer.autoClear = false;
+        this.renderer.setClearColor(0x000000, 0.0);
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      }
+
+      setupCamera() {
+        this.camera = new THREE.PerspectiveCamera(
+          CONFIG.CAMERA.FOV,
+          window.innerWidth / window.innerHeight,
+          CONFIG.CAMERA.NEAR,
+          CONFIG.CAMERA.FAR
+        );
+        this.camera.position.z = CONFIG.CAMERA.INITIAL_Z;
+      }
+
+      setupScene() {
+        this.scene = new THREE.Scene();
+        this.scene.add(this.camera);
+        
+        // Create Earth group for positioning
+        this.earthGroup = new THREE.Object3D();
+        this.earthGroup.position.set(0, 0, 0); // Initialize with both X and Y positioning
+        this.scene.add(this.earthGroup);
+      }
+
+      setupLighting() {
+        // Ambient lighting
+        const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
+        this.scene.add(ambientLight);
+        
+        // Sun light with real-world positioning
+        this.sunLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        this.updateSunPosition();
+        this.sunLight.castShadow = true;
+        this.sunLight.shadow.mapSize.width = 2048;
+        this.sunLight.shadow.mapSize.height = 2048;
+        this.scene.add(this.sunLight);
+        
+        // Lens flare effects
+        this.setupLensFlare();
+      }
+
+      setupLensFlare() {
+        const flareTexture0 = this.textureLoader.load("https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/lensflare/lensflare0.png");
+        const flareTexture3 = this.textureLoader.load("https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/lensflare/lensflare3.png");
+        
+        const lensflare = new THREE.Lensflare();
+        lensflare.addElement(new THREE.LensflareElement(flareTexture0, 700, 0, this.sunLight.color));
+        lensflare.addElement(new THREE.LensflareElement(flareTexture3, 60, 0.6));
+        lensflare.addElement(new THREE.LensflareElement(flareTexture3, 70, 0.7));
+        lensflare.addElement(new THREE.LensflareElement(flareTexture3, 120, 0.9));
+        lensflare.addElement(new THREE.LensflareElement(flareTexture3, 70, 1.0));
+        
+        this.sunLight.add(lensflare);
+      }
+
+      setupEarth() {
+        // Use responsive radius and segments
+        const earthRadius = Utils.getResponsiveEarthRadius();
+        const earthSegments = Utils.getResponsiveSegments();
+        
+        const earthGeometry = new THREE.SphereGeometry(earthRadius, earthSegments, earthSegments);
+        const earthMaterial = new THREE.MeshPhongMaterial({
+          map: this.textureLoader.load(Utils.toRawURL(CONFIG.URLS.TEXTURES.EARTH)),
+          bumpMap: this.textureLoader.load(Utils.toRawURL(CONFIG.URLS.TEXTURES.BUMP)),
+          emissiveMap: this.textureLoader.load(Utils.toRawURL(CONFIG.URLS.TEXTURES.NIGHT)),
+          emissive: new THREE.Color(0xffffff),
+          emissiveIntensity: 1.0,
+          bumpScale: 0.1,
+          shininess: 5,
+          specular: new THREE.Color(0x111111),
+        });
+        
+        this.earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
+        this.earthMesh.castShadow = true;
+        this.earthMesh.receiveShadow = true;
+        this.earthGroup.add(this.earthMesh);
+      }
+
+      setupClouds() {
+        // Use responsive radius and segments
+        const cloudRadius = Utils.getResponsiveCloudRadius();
+        const cloudSegments = Utils.getResponsiveSegments();
+        
+        const cloudGeometry = new THREE.SphereGeometry(cloudRadius, cloudSegments, cloudSegments);
+        const cloudMaterial = new THREE.MeshPhongMaterial({
+          map: this.textureLoader.load(Utils.toRawURL(CONFIG.URLS.TEXTURES.CLOUDS)),
+          transparent: true,
+          opacity: CONFIG.CLOUDS.OPACITY,
+          depthWrite: false,
+          shininess: 80,
+          specular: new THREE.Color(0x666666),
+        });
+        
+        this.cloudMesh = new THREE.Mesh(cloudGeometry, cloudMaterial);
+        this.cloudMesh.castShadow = true;
+        this.earthGroup.add(this.cloudMesh);
+      }
+
+      setupStars() {
+        const starGeometry = new THREE.SphereGeometry(CONFIG.STARS.RADIUS, CONFIG.STARS.SEGMENTS, CONFIG.STARS.SEGMENTS);
+        const starMaterial = new THREE.MeshBasicMaterial({
+          map: this.textureLoader.load(Utils.toRawURL(CONFIG.URLS.TEXTURES.STARS)),
+          side: THREE.BackSide,
+        });
+        
+        this.starMesh = new THREE.Mesh(starGeometry, starMaterial);
+        this.scene.add(this.starMesh);
+      }
+
+      setupControls() {
+        this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+        this.controls.enableDamping = true;
+        this.controls.dampingFactor = 0.05;
+        this.controls.enablePan = false;
+        this.controls.screenSpacePanning = false;
+        this.controls.minDistance = 1;
+        this.controls.maxDistance = 4;
+        this.controls.autoRotate = false;
+        this.controls.autoRotateSpeed = 0;
+        
+        // Add interaction detection to prevent text following during user interaction
+        this.controls.addEventListener('start', () => {
+          this.onInteractionStart();
+        });
+        
+        this.controls.addEventListener('end', () => {
+          this.onInteractionEnd();
+        });
+      }
+
+      onInteractionStart() {
+        // User started interacting - stop text following
+        this.isUserInteracting = true;
+        
+        // Clear any existing timeout
+        if (this.interactionTimeout) {
+          clearTimeout(this.interactionTimeout);
+          this.interactionTimeout = null;
+        }
+      }
+
+      onInteractionEnd() {
+        // User stopped interacting - resume text following after a short delay
+        this.isUserInteracting = false;
+        
+        // Resume text following after 500ms of no interaction
+        this.interactionTimeout = setTimeout(() => {
+          // Only resume if we're in shifted mode and still not interacting
+          if (this.isShifted && !this.isUserInteracting) {
+            this.textFollowsEarth = true;
+          }
+        }, 500);
+      }
+
+      updateSunPosition() {
+        const sunPos = Utils.calculateSunPosition();
+        this.sunLight.position.set(sunPos.x, sunPos.y, sunPos.z);
+      }
+
+      setupEventListeners() {
+        // Window resize
+        window.addEventListener('resize', () => this.handleResize());
+        
+        // Button functionality
+        const getStartedBtn = document.getElementById('getStartedBtn');
+        getStartedBtn.addEventListener('click', () => this.toggleView());
+      }
+
+      handleResize() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        
+        this.camera.aspect = width / height;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(width, height);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        
+        // Update Earth and cloud sizes on resize
+        this.updateEarthSize();
+      }
+
+      updateEarthSize() {
+        // Get new responsive sizes
+        const newEarthRadius = Utils.getResponsiveEarthRadius();
+        const newCloudRadius = Utils.getResponsiveCloudRadius();
+        const newSegments = Utils.getResponsiveSegments();
+        
+        // Update Earth geometry
+        if (this.earthMesh) {
+          const earthGeometry = new THREE.SphereGeometry(newEarthRadius, newSegments, newSegments);
+          this.earthMesh.geometry.dispose(); // Clean up old geometry
+          this.earthMesh.geometry = earthGeometry;
+        }
+        
+        // Update Cloud geometry
+        if (this.cloudMesh) {
+          const cloudGeometry = new THREE.SphereGeometry(newCloudRadius, newSegments, newSegments);
+          this.cloudMesh.geometry.dispose(); // Clean up old geometry
+          this.cloudMesh.geometry = cloudGeometry;
+        }
+        
+        // Update UI elements
+        Utils.updateButtonStyles();
+        Utils.updateTextStyles();
+        
+        // Recalculate positions if in shifted mode
+        if (this.isShifted) {
+          const earthPos = PositionCalculator.getEarthPosition(this.camera);
+          
+          this.targetEarthPosition.x = earthPos.x;
+          this.targetEarthPosition.y = earthPos.y;
+          
+          // Update legacy properties for compatibility
+          this.targetX = earthPos.x;
+          this.targetY = earthPos.y;
+          
+          // Text position will automatically follow Earth, no need to recalculate
+          // since it's computed in real-time during update()
+        }
+      }
+
+      toggleView() {
+        const getStartedBtn = document.getElementById('getStartedBtn');
+        const labelsElement = document.getElementById('labels');
+        
+        if (!this.isShifted) {
+          // Switch to presentation view
+          this.camera.position.set(0, 0, CONFIG.CAMERA.INITIAL_Z);
+          this.controls.target.set(0, 0, 0);
+          this.controls.update();
+          
+          // Calculate positions based on screen orientation
+          const earthPos = PositionCalculator.getEarthPosition(this.camera);
+          
+          // Set current Earth position to start animation from current location
+          this.earthPosition.x = this.earthGroup.position.x;
+          this.earthPosition.y = this.earthGroup.position.y;
+          
+          // Set target positions for smooth animation
+          this.targetEarthPosition.x = earthPos.x;
+          this.targetEarthPosition.y = earthPos.y;
+          this.currentOrientation = earthPos.isPortrait ? 'portrait' : 'landscape';
+          
+          // Get current text position to start animation from current location
+          const labelsElement = document.getElementById('labels');
+          if (labelsElement) {
+            const currentLeft = parseFloat(labelsElement.style.left || '50%');
+            const currentTop = parseFloat(labelsElement.style.top || '50%');
+            this.textPosition = new Position(currentLeft, currentTop);
+          }
+          
+          // Enable text following Earth center after a slight delay for smooth transition
+          setTimeout(() => {
+            this.textFollowsEarth = true;
+          }, 100);
+          
+          // Update legacy properties for compatibility
+          this.targetX = earthPos.x;
+          this.targetY = earthPos.y;
+          this.targetTextLeft = CONFIG.ANIMATION.TEXT_SHIFT_PERCENT;
+          
+          getStartedBtn.textContent = 'Back';
+          document.body.classList.add('shifted');
+          this.controls.enabled = false;
+          this.isShifted = true;
+          
+          // Reset interaction state when entering shifted mode
+          this.isUserInteracting = false;
+          if (this.interactionTimeout) {
+            clearTimeout(this.interactionTimeout);
+            this.interactionTimeout = null;
+          }
+        } else {
+          // Return to center view
+          // Set current positions to start smooth animation from current location
+          this.earthPosition.x = this.earthGroup.position.x;
+          this.earthPosition.y = this.earthGroup.position.y;
+          
+          this.targetEarthPosition.x = 0;
+          this.targetEarthPosition.y = 0;
+          
+          // Disable text following and set smooth return to center
+          this.textFollowsEarth = false;
+          
+          // Reset interaction state when returning to center
+          this.isUserInteracting = false;
+          if (this.interactionTimeout) {
+            clearTimeout(this.interactionTimeout);
+            this.interactionTimeout = null;
+          }
+          
+          // Get current text position to animate from
+          const labelsElement = document.getElementById('labels');
+          if (labelsElement) {
+            const currentLeft = parseFloat(labelsElement.style.left || '50%');
+            const currentTop = parseFloat(labelsElement.style.top || '50%');
+            this.textPosition = new Position(currentLeft, currentTop);
+          }
+          
+          // Set target to center for smooth animation
+          this.targetTextPosition = new Position(50, 50);
+          
+          // Update legacy properties for compatibility
+          this.targetX = 0;
+          this.targetY = 0;
+          this.targetTextX = '50%';
+          this.targetTextY = '50%';
+          this.targetTextLeft = CONFIG.ANIMATION.CENTER_PERCENT;
+          
+          this.camera.position.copy(this.defaultCameraPosition);
+          this.controls.target.copy(this.defaultCameraTarget);
+          this.controls.update();
+          
+          this.controls.enabled = true;
+          getStartedBtn.textContent = 'Get Started';
+          document.body.classList.remove('shifted');
+          this.isShifted = false;
+        }
+      }
+
+      startAnimation() {
+        const animate = () => {
+          requestAnimationFrame(animate);
+          this.update();
+          this.render();
+        };
+        animate();
+      }
+
+      update() {
+        // Animate Earth position
+        this.earthPosition = this.animationManager.lerpPosition(
+          this.earthPosition, 
+          this.targetEarthPosition
+        );
+        this.earthGroup.position.x = this.earthPosition.x;
+        this.earthGroup.position.y = this.earthPosition.y;
+        
+        // Update text position with smooth transitions
+        const labelsElement = document.getElementById('labels');
+        if (labelsElement) {
+          // Only follow Earth if enabled AND user is not currently interacting
+          if (this.textFollowsEarth && !this.isUserInteracting && this.earthGroup && this.camera && this.renderer) {
+            // Get real-time position of Earth center in screen coordinates
+            const earthScreenPos = PositionCalculator.getTextPositionRelativeToEarth(
+              this.earthGroup, 
+              this.camera, 
+              this.renderer
+            );
+            
+            // Convert to Position object for smooth animation
+            const targetEarthPos = Position.fromPercentage(earthScreenPos.x, earthScreenPos.y);
+            
+            // Smoothly animate to Earth center position
+            this.textPosition = this.animationManager.lerpPosition(
+              this.textPosition, 
+              targetEarthPos
+            );
+            
+            const posStr = this.textPosition.toPercentageString();
+            labelsElement.style.left = posStr.x;
+            labelsElement.style.top = posStr.y;
+          } else if (!this.textFollowsEarth) {
+            // Animate to target position (for returning to center)
+            this.textPosition = this.animationManager.lerpPosition(
+              this.textPosition, 
+              this.targetTextPosition
+            );
+            
+            const posStr = this.textPosition.toPercentageString();
+            labelsElement.style.left = posStr.x;
+            labelsElement.style.top = posStr.y;
+          }
+          // If user is interacting, keep text at current position (no animation)
+        }
+        
+        // Rotation animations
+        this.earthGroup.rotation.y += CONFIG.EARTH.GROUP_ROTATION_SPEED;
+        this.earthMesh.rotation.y += CONFIG.EARTH.ROTATION_SPEED;
+        this.cloudMesh.rotation.y += CONFIG.CLOUDS.ROTATION_SPEED;
+        this.starMesh.rotation.y += CONFIG.STARS.ROTATION_SPEED_Y;
+        this.starMesh.rotation.x += CONFIG.STARS.ROTATION_SPEED_X;
+        
+        this.controls.update();
+      }
+
+      render() {
+        this.renderer.render(this.scene, this.camera);
+      }
+    }
+
+    // === APPLICATION INITIALIZATION === //
+    class App {
+      constructor() {
+        this.earthScene = new EarthScene();
+      }
+
+      async init() {
+        try {
+          // Load custom font
+          await FontLoader.load();
+          
+          // Initialize 3D scene
+          this.earthScene.init();
+          
+          // Show UI elements
+          this.showUI();
+          
+        } catch (error) {
+          // Application initialization failed - continue with fallbacks
+        }
+      }
+
+      showUI() {
+        setTimeout(() => {
+          const labelsElement = document.getElementById('labels');
+          if (labelsElement) {
+            labelsElement.style.display = 'block';
+          }
+          
+          // Apply initial responsive styles
+          Utils.updateButtonStyles();
+          Utils.updateTextStyles();
+        }, 100);
+      }
+    }
+
+    // === MAIN ENTRY POINT === //
+    window.onload = () => {
+      const app = new App();
+      app.init();
+    };
   </script>
 </body>
 
 </html>
-
